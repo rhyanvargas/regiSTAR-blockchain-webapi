@@ -94,7 +94,7 @@ class Blockchain {
             // Push block to chain
             resolve(self.chain.push(newBlock));
             // Reject with error
-            reject(error);
+            reject(error => console.log(error));
         });
     }
 
@@ -213,8 +213,8 @@ class Blockchain {
         return new Promise(async (resolve, reject) => {
             self.chain.filter(block => {
                 let thisBlockObj = new BlockClass.Block(block);
-                let isValidBlock = await thisBlockObj.validate().then((msg) => msg).catch((err) => err);
-                let hasPrevHash = await block.previousBlockHash;
+                let isValidBlock = thisBlockObj.validate().then((msg) => msg).catch((err) => err);
+                let hasPrevHash = block.previousBlockHash;
 
                 if (hasPrevHash && isValidBlock) {
                     console.log(isValid);

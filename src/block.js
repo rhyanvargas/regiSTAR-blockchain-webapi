@@ -92,15 +92,5 @@ class Block {
     }
 
 }
-let newBlock = new Block({ "name": "VALIDATE ME!" });
-
-// newBlock.validate()
-//     .then((message) => { console.log("This block is " + message); })
-//     .catch((error) => { console.log("This block is " + error); });
-
-newBlock.getBData()
-    .then((message) => { console.log("Get block data: \n" + JSON.stringify(message)); })
-    .catch((error) => { console.log(error); });
-
 
 module.exports.Block = Block;                    // Exposing the Block class as a module
