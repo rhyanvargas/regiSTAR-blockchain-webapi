@@ -90,7 +90,7 @@ class Blockchain {
                 newBlock.time +
                 newBlock.body +
                 newBlock.previousBlockHash
-            )
+            ).toString();
             // Push block to chain
             console.log(`Add block: SUCCESS: \n`
                 , JSON.stringify(newBlock) + '\n---------------------\n"CHAIN HEIGHT: ' + self.height);
@@ -145,7 +145,7 @@ class Blockchain {
             if (differenceInminutes < 5) {
                 bitcoinMessage.verify(message, address, signature);
 
-                resolve(self._addBlock({ star, "address": address }));
+                resolve(self._addBlock({ star, "owner": address }));
             } else {
                 reject((error) => { console.log(error) })
             }
@@ -211,9 +211,12 @@ class Blockchain {
                         // Decode each block data
                         if (result.star) {
                             // IF star is in the block - not genesis block
-                            if (address === result.address) {
+                            if (address === result.owner) {
                                 // and if address matches this block, push star to array..
-                                stars.push(result.star);
+                                stars.push({
+                                    "owner": result.owner,
+                                    "star": result.star
+                                });
                             }
                         }
                     }).catch(err => console.log(err));
