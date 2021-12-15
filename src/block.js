@@ -85,6 +85,8 @@ class Block {
         return new Promise((resolve, reject) => {
             if (self.height > 0) {
                 resolve(decodedDataJSON);
+            } else if (self.height === 0) {
+                resolve(console.log("GETDTA: THIS IS GENESIS BLOCK. NO DATA NEEDED"));
             } else {
                 reject("ERROR: THIS IS GENESIS BLOCK. NO DATA RETURNED! --> HEIGHT = " + self.height)
             }

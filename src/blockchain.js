@@ -66,7 +66,7 @@ class Blockchain {
         let newBlock = new BlockClass.Block(block);
         return new Promise(async (resolve, reject) => {
             // IF NOT genesis block...
-            if (newBlock.height > 0) {
+            if (self.height > 0) {
                 // Set previous block hash -  which is why we take length - 1    
                 newBlock.previousBlockHash = self.chain[self.chain.length - 1].hash;
                 // Set height of block and chain
@@ -75,7 +75,7 @@ class Blockchain {
             }
 
             // IF Genesis block...
-            if (newBlock.height === 0) {
+            if (self.height === -1) {
                 // Set Chain height
                 self.height = 1;
                 // Increment block Height
@@ -92,7 +92,10 @@ class Blockchain {
                 newBlock.previousBlockHash
             )
             // Push block to chain
-            resolve(self.chain.push(newBlock));
+            console.log(`Add block: SUCCESS: \n`
+                , JSON.stringify(newBlock) + '\n---------------------\n"CHAIN HEIGHT: ' + self.height);
+            self.chain.push(newBlock);
+            resolve(newBlock);
             // Reject with error
             reject(error => console.log(error));
         });
@@ -140,8 +143,9 @@ class Blockchain {
 
             // Check if the time elapsed is less than 5 minutes
             if (differenceInminutes < 5) {
-                await bitcoinMessage.verify(message, address, signature);
-                resolve(self._addBlock({ star, "owner": address }));
+                bitcoinMessage.verify(message, address, signature);
+
+                resolve(self._addBlock({ star, "address": address }));
             } else {
                 reject((error) => { console.log(error) })
             }
@@ -191,10 +195,30 @@ class Blockchain {
      */
     getStarsByWalletAddress(address) {
         let self = this;
+        let stars = []
         return new Promise((resolve, reject) => {
             if (address) {
-                self.chain.filter(stars => stars.owner === address)[0];
-                resolve();
+
+                self.chain.forEach(currBlock => {
+                    let newBlock = new BlockClass.Block(currBlock);
+                    // Set newblock props
+                    newBlock.hash = currBlock.hash;
+                    newBlock.height = currBlock.height;
+                    newBlock.body = currBlock.body;
+                    newBlock.time = currBlock.time;
+                    newBlock.previousBlockHash = currBlock.previousBlockHash;
+                    newBlock.getBData().then((result) => {
+                        // Decode each block data
+                        if (result.star) {
+                            // IF star is in the block - not genesis block
+                            if (address === result.address) {
+                                // and if address matches this block, push star to array..
+                                stars.push(result.star);
+                            }
+                        }
+                    }).catch(err => console.log(err));
+                })
+                resolve(stars);
             } else {
                 reject(null)
             }
