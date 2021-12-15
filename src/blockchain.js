@@ -140,11 +140,11 @@ class Blockchain {
             let messageTimeToMinutes = Math.floor(messageTime / 60000);
             let currentTimeToMinutes = Math.floor(currentTime / 60000);
             let differenceInminutes = currentTimeToMinutes - messageTimeToMinutes;
+            let isVerified = bitcoinMessage.verify(message, address, signature);
 
             // Check if the time elapsed is less than 5 minutes
-            if (differenceInminutes < 5) {
-                bitcoinMessage.verify(message, address, signature);
-
+            if (differenceInminutes < 5 && isVerified) {
+                console.log("Bitcoin Verified?: ", isVerified);
                 resolve(self._addBlock({ star, "owner": address }));
             } else {
                 reject((error) => { console.log(error) })
