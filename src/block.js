@@ -1,7 +1,7 @@
 /**
  *                          Block class
  *  The Block class is a main component into any Blockchain platform, 
- *  it will store the data and act as a dataset for your application.
+ *  it will store te data and act as a dataset for your application.
  *  The class will expose a method to validate the data... The body of
  *  the block will contain an Object that contain the data to be stored,
  *  the data should be stored encoded.
@@ -50,10 +50,16 @@ class Block {
             // Comparing if the hashes changed
             if (blockHash === recalculatedBlockHash) {
                 // Returning the Block is valid
-                resolve("VALID! ")
+                resolve(() => {
+                    console.log("VALID! ");
+                    true;
+                })
             } else {
                 // Returning the Block is not valid
-                reject("INVALID:\nHASH = " + blockHash + "\n-----------------\n" + "RECALCULATED HASH: " + recalculatedBlockHash);
+                reject(() => {
+                    console.log("INVALID:\nHASH = " + blockHash + "\n-----------------\n" + "RECALCULATED HASH: " + recalculatedBlockHash);
+                    false;
+                })
             }
         });
     }
