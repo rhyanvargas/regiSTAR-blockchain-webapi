@@ -39,7 +39,7 @@ class Block {
         let self = this;
         return new Promise((resolve, reject) => {
             // Save in auxiliary variable the current block hash
-            let blockHash = self.hash;
+            let blockHash = self.hash ? self.hash : null;
             // Recalculate the hash of the Block
             let recalculatedBlockHash = SHA256(
                 self.height +
@@ -48,20 +48,21 @@ class Block {
                 self.previousBlockHash
             ).toString();
             // Comparing if the hashes changed
-            if (blockHash === recalculatedBlockHash) {
+            if (self.height === 1) {
+                resolve({ "message": "BLOCK IS GENESIS. VALID! ", "isValid": true })
+            } else if (blockHash === recalculatedBlockHash) {
                 // Returning the Block is valid
-                resolve(() => {
-                    console.log("VALID! ");
-                    true;
-                })
+                resolve({ "message": "BLOCK IS VALID! ", "isValid": true })
+            } else if (blockHash !== recalculatedBlockHash) {
+                resolve({ "message": "BLOCK IS INVALID. PLEASE FIX CHAIN! ", "isValid": false })
             } else {
                 // Returning the Block is not valid
-                reject(() => {
-                    console.log("INVALID:\nHASH = " + blockHash + "\n-----------------\n" + "RECALCULATED HASH: " + recalculatedBlockHash);
-                    false;
+                reject({
+                    "message": "ERROR:\nHASH = " + blockHash + "\n-----------------\n" + "RECALCULATED HASH: " + recalculatedBlockHash,
+                    "isValid": false
                 })
             }
-        });
+        })
     }
 
     /**
@@ -95,4 +96,5 @@ class Block {
 
 }
 
-module.exports.Block = Block;                    // Exposing the Block class as a module
+// Exposing the Block class as a module
+module.exports.Block = Block;

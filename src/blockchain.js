@@ -64,13 +64,19 @@ class Blockchain {
     _addBlock(block) {
         let self = this;
         let newBlock = new BlockClass.Block(block);
+
         return new Promise(async (resolve, reject) => {
+            console.log(self.height);
+
+            console.log(self.chain);
+
             // IF NOT genesis block...
             if (self.height > 0) {
+                // Set height of block
+                newBlock.height = self.chain[0].height + 1;
                 // Set previous block hash -  which is why we take length - 1    
                 newBlock.previousBlockHash = self.chain[self.chain.length - 1].hash;
-                // Set height of block and chain
-                newBlock.height = self.chain[self.chain.length - 1].height + 1;
+
                 self.height++;
             }
 
@@ -91,13 +97,22 @@ class Blockchain {
                 newBlock.body +
                 newBlock.previousBlockHash
             ).toString();
-            // Push block to chain
-            console.log(`Add block: SUCCESS: \n`
-                , JSON.stringify(newBlock) + '\n---------------------\n"CHAIN HEIGHT: ' + self.height);
-            self.chain.push(newBlock);
-            resolve(newBlock);
-            // Reject with error
-            reject(error => console.log(error));
+
+            self.validateChain().finally(() => {
+                console.log("\n~~~~~~~~~~~~~ ⏳ VALIDATING CHAIN ⏳ ~~~~~~~~~~~~~ \n");
+            }).then((result) => {
+                if (result.isValid) {
+                    self.chain.push(newBlock);
+                    console.log("✅ ✅ ✅ ✅ ✅  ADDED BLOCK ✅ ✅ ✅ ✅ ✅\n", newBlock);
+                    resolve(newBlock)
+                } else {
+                    console.log(result);
+                }
+                console.log("\n🔥 🔥 🔥 🔥 🔥  FINISHED VALIDATING CHAIN 🔥 🔥 🔥 🔥 \n");
+
+            }).catch((err) => reject(console.log(err)))
+
+
         });
     }
 
@@ -236,23 +251,34 @@ class Blockchain {
      */
     validateChain() {
         let self = this;
-        let errorLog = [];
+        let invalidBlocks = []
         return new Promise(async (resolve, reject) => {
-            self.chain.filter(block => {
-                let thisBlockObj = new BlockClass.Block(block);
-                let isValidBlock = thisBlockObj.validate().then((msg) => msg).catch((err) => err);
-                let hasPrevHash = block.previousBlockHash;
 
-                if (hasPrevHash && isValidBlock) {
-                    console.log(isValid);
-                } else {
-                    console.log("ERROR: ", isValidBlock);
-                    errorLog.push(isValid);
-                }
+            self.chain.filter(block => {
+                // Find invalid Blocks
+                let thisBlockObj = new BlockClass.Block(block);
+
+                thisBlockObj.validate().then((validation) => {
+                    // validate each block
+                    if (!validation.isValid) {
+                        // Push invalid block with message to array
+                        invalidBlocks.push({ "block": thisBlockObj, "message": validation.message });
+                    } else {
+                        let validBlocks = [];
+                        validBlocks.push({ "block": thisBlockObj, "message": validation.message });
+                    }
+                }).catch(err => console.log(err));
 
             })
-            resolve(errorLog);
-            reject(err => console.log(err));
+            if (invalidBlocks.length > 0) {
+                resolve({ "invalidBlocks": invalidBlocks, "message": "INVALID BLOCKS FOUND!", "isValid": false })
+
+            } else if (invalidBlocks.length === 0) {
+                resolve({ "invalidBlocks": invalidBlocks, "message": "NO INVALID BLOCKS FOUND!", "isValid": true })
+            } else {
+                reject({ "message": "ERROR. InvalidBlocks Length: " + invalidBlocks.length })
+            }
+
         });
     }
 
