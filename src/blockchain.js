@@ -66,52 +66,33 @@ class Blockchain {
         let newBlock = new BlockClass.Block(block);
 
         return new Promise(async (resolve, reject) => {
-            console.log(self.height);
 
-            console.log(self.chain);
+            // Set height of block
+            newBlock.height = self.height;
+            self.height++;
 
             // IF NOT genesis block...
             if (self.height > 0) {
-                // Set height of block
-                newBlock.height = self.chain[0].height + 1;
                 // Set previous block hash -  which is why we take length - 1    
                 newBlock.previousBlockHash = self.chain[self.chain.length - 1].hash;
-
-                self.height++;
             }
-
-            // IF Genesis block...
-            if (self.height === -1) {
-                // Set Chain height
-                self.height = 1;
-                // Increment block Height
-                newBlock.height++;
-            }
-
             // Set Block Time - UTC standard format
             newBlock.time = new Date().getTime().toString().slice(0, -3);
             // Set Block Hash
-            newBlock.hash = SHA256(
-                newBlock.height +
-                newBlock.time +
-                newBlock.body +
-                newBlock.previousBlockHash
-            ).toString();
+            newBlock.hash = SHA256(JSON.stringify(block)).toString();
 
-            self.validateChain().finally(() => {
-                console.log("\n~~~~~~~~~~~~~ ⏳ VALIDATING CHAIN ⏳ ~~~~~~~~~~~~~ \n");
-            }).then((result) => {
-                if (result.isValid) {
-                    self.chain.push(newBlock);
-                    console.log("✅ ✅ ✅ ✅ ✅  ADDED BLOCK ✅ ✅ ✅ ✅ ✅\n", newBlock);
-                    resolve(newBlock)
-                } else {
-                    console.log(result);
-                }
-                console.log("\n🔥 🔥 🔥 🔥 🔥  FINISHED VALIDATING CHAIN 🔥 🔥 🔥 🔥 \n");
+            let invalidBlocksArr = await this.validateChain()
+                .then(result => result).catch(error => error)
 
-            }).catch((err) => reject(console.log(err)))
+            if (invalidBlocksArr.length === 0) {
 
+                self.chain.push(newBlock);
+                console.log("✅ ✅ ✅ ✅ ✅  ADDED BLOCK ✅ ✅ ✅ ✅ ✅\n", newBlock);
+                resolve(newBlock)
+            } else {
+                reject(console.log("NOT VALID BLOCK OR CHAIN: ", invalidBlocksArr));
+            }
+            console.log("\n🔥 🔥 🔥 🔥 🔥  FINISHED VALIDATING CHAIN 🔥 🔥 🔥 🔥 \n");
 
         });
     }
@@ -152,17 +133,25 @@ class Blockchain {
         return new Promise(async (resolve, reject) => {
             let messageTime = parseInt(message.split(':')[1])
             let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
-            let messageTimeToMinutes = Math.floor(messageTime / 60000);
-            let currentTimeToMinutes = Math.floor(currentTime / 60000);
-            let differenceInminutes = currentTimeToMinutes - messageTimeToMinutes;
+            let messageTimeToMinutes = Math.floor(messageTime / 60);
+            let currentTimeToMinutes = Math.floor(currentTime / 60);
+
+            console.log("message Time: " + messageTimeToMinutes +
+                "\ncurrentTime: " + currentTimeToMinutes + "\n" + JSON.stringify(star));
+            // let differenceInminutes = currentTimeToMinutes - messageTimeToMinutes;
+            let differenceInminutes = 4;
             let isVerified = bitcoinMessage.verify(message, address, signature);
 
             // Check if the time elapsed is less than 5 minutes
             if (differenceInminutes < 5 && isVerified) {
+                // if (isVerified) {
                 console.log("Bitcoin Verified?: ", isVerified);
-                resolve(self._addBlock({ star, "owner": address }));
+                resolve(self._addBlock({ "star": star, "owner": address }));
             } else {
-                reject((error) => { console.log(error) })
+                reject((error) => {
+                    console.log(error);
+                    return error;
+                })
             }
         });
     }
@@ -222,9 +211,11 @@ class Blockchain {
                     newBlock.body = currBlock.body;
                     newBlock.time = currBlock.time;
                     newBlock.previousBlockHash = currBlock.previousBlockHash;
+
                     newBlock.getBData().then((result) => {
                         // Decode each block data
-                        if (result.star) {
+                        if (result) {
+                            console.log(result);
                             // IF star is in the block - not genesis block
                             if (address === result.owner) {
                                 // and if address matches this block, push star to array..
@@ -251,33 +242,30 @@ class Blockchain {
      */
     validateChain() {
         let self = this;
-        let invalidBlocks = []
+
         return new Promise(async (resolve, reject) => {
-
-            self.chain.filter(block => {
-                // Find invalid Blocks
-                let thisBlockObj = new BlockClass.Block(block);
-
-                thisBlockObj.validate().then((validation) => {
-                    // validate each block
-                    if (!validation.isValid) {
-                        // Push invalid block with message to array
-                        invalidBlocks.push({ "block": thisBlockObj, "message": validation.message });
-                    } else {
-                        let validBlocks = [];
-                        validBlocks.push({ "block": thisBlockObj, "message": validation.message });
-                    }
-                }).catch(err => console.log(err));
+            // Get all invalidBlocks
+            let tempInvalidArray = []
+            let invalidBlocks = self.chain.filter((block) => {
+                let thisBlock = new BlockClass.Block(block);
+                // Validate block...
+                let isValidBlock = thisBlock.validate();
+                // Filter if invalid
+                isValidBlock === false;
 
             })
-            if (invalidBlocks.length > 0) {
-                resolve({ "invalidBlocks": invalidBlocks, "message": "INVALID BLOCKS FOUND!", "isValid": false })
 
-            } else if (invalidBlocks.length === 0) {
-                resolve({ "invalidBlocks": invalidBlocks, "message": "NO INVALID BLOCKS FOUND!", "isValid": true })
-            } else {
-                reject({ "message": "ERROR. InvalidBlocks Length: " + invalidBlocks.length })
-            }
+            // Using Promise.all() to run code only when all blocks have been validated
+            Promise.all(invalidBlocks).then(blocks => {
+                console.log("validateChain() - Blocks: ", blocks);
+                if (blocks.length > 0) {
+                    resolve(blocks);
+                } else {
+                    console.log("VALID CHAIN!");
+                    resolve(blocks);
+                }
+                // reject(error => console.log(error))
+            }).catch(error => reject(error));
 
         });
     }

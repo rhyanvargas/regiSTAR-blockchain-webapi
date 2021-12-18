@@ -37,30 +37,24 @@ class Block {
      */
     validate() {
         let self = this;
-        return new Promise((resolve, reject) => {
-            // Save in auxiliary variable the current block hash
-            let blockHash = self.hash ? self.hash : null;
+        return new Promise(async (resolve, reject) => {
+            // Set this block's hash to variable...
+            let currBlockHash = self.hash
+            // Set hash to null in order to generate new hash in next step...
+            self.hash = null
             // Recalculate the hash of the Block
-            let recalculatedBlockHash = SHA256(
-                self.height +
-                self.body +
-                self.time +
-                self.previousBlockHash
-            ).toString();
-            // Comparing if the hashes changed
-            if (self.height === 1) {
-                resolve({ "message": "BLOCK IS GENESIS. VALID! ", "isValid": true })
-            } else if (blockHash === recalculatedBlockHash) {
-                // Returning the Block is valid
-                resolve({ "message": "BLOCK IS VALID! ", "isValid": true })
-            } else if (blockHash !== recalculatedBlockHash) {
-                resolve({ "message": "BLOCK IS INVALID. PLEASE FIX CHAIN! ", "isValid": false })
+            let newBlockHash = SHA256(JSON.stringify(self)).toString();
+            // Set the currentHash back to it's original hash
+            self.hash = currBlockHash;
+            // Compare newHash with current Block hash
+            if (currBlockHash === newBlockHash) {
+                resolve(true)
+            }
+            else if (currBlockHash !== newBlockHash) {
+                resolve(false);
             } else {
                 // Returning the Block is not valid
-                reject({
-                    "message": "ERROR:\nHASH = " + blockHash + "\n-----------------\n" + "RECALCULATED HASH: " + recalculatedBlockHash,
-                    "isValid": false
-                })
+                reject(error)
             }
         })
     }
@@ -84,10 +78,10 @@ class Block {
         let decodedDataJSON = JSON.parse(decodedData);
         // Resolve with the data if the object isn't the Genesis block
         return new Promise((resolve, reject) => {
-            if (self.height > 0) {
+            if (self.height >= 0) {
                 resolve(decodedDataJSON);
-            } else if (self.height === 0) {
-                resolve(console.log("GETDTA: THIS IS GENESIS BLOCK. NO DATA NEEDED"));
+            } else if (self.height === -1) {
+                resolve(console.log("GETDTA: THIS IS GENESIS BLOCK. NO DATA NEEDED\n"));
             } else {
                 reject("ERROR: THIS IS GENESIS BLOCK. NO DATA RETURNED! --> HEIGHT = " + self.height)
             }
